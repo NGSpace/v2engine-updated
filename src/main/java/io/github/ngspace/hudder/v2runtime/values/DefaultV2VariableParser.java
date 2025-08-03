@@ -110,12 +110,7 @@ public class DefaultV2VariableParser implements IV2VariableParser {
 		// Is it a variable name that does not start with _?
 		boolean matchesVariableRegex = value.matches("[A-Za-z\\d][A-Za-z\\d_]*");
 		
-		// System variable
-		if (matchesVariableRegex&&comp.isSystemVariable(value.toLowerCase())&&comp.SYSTEM_VARIABLES_ENABLED)
-			return new V2SystemVar(value, comp, line, charpos);
-		
 		// Dynamic variable
-		// It is not a systemvariable and is therefore a user defined/dynamic variable!
 		if (matchesVariableRegex) return new V2DynamicVar(value, runtime, line, charpos);
 		
 		

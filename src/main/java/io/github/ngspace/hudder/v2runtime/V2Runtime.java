@@ -1,8 +1,10 @@
 package io.github.ngspace.hudder.v2runtime;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import io.github.ngspace.hudder.V2Engine;
 import io.github.ngspace.hudder.compilers.abstractions.AV2Compiler;
 import io.github.ngspace.hudder.compilers.utils.CompileException;
 import io.github.ngspace.hudder.compilers.utils.CompileState;
@@ -25,20 +27,15 @@ public class V2Runtime {
 	public CompileState compileState;
 	
 	public CompileState execute() throws CompileException {
-		compileState = new CompileState(CompileState.TOPLEFT);
+		compileState = new CompileState();
 		StringBuilder builder = new StringBuilder();
 		for (int i = 0;i<elements.length;i++) {
 			AV2RuntimeElement element = elements[i];
 			if (!element.execute(compileState, builder)||compileState.hasReturned) {
-//				System.out.println("r"+(compiler.globalRuntime==this));
 				compileState.hasBroken = true;
 				break;
 			}
-//			System.out.println(element.getClass().getSimpleName());
-//			if (element instanceof StringV2RuntimeElement e) System.out.println(e.string);
 		}
-//		System.out.println(builder.toString());
-		compileState.addString(builder.toString(), false);
 		return compileState;
 	}
 	
@@ -61,7 +58,17 @@ public class V2Runtime {
 
 	public Object getVariable(String name) {
 		Object object = getScoped(name);
-		if (object==null) return compiler.getDynamicVariable(name);
+		if (object==null) return compiler.get(name);
 		return object;
+	}
+	public void importFile(String file, int line, int charpos) throws CompileException {
+		try {
+			compiler.compile(V2Engine.getFile(file), file);
+		} catch (CompileException e) {
+			throw new CompileException(e.getFailureMessage() +"\nExecution failed for " + file, line, charpos);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new CompileException(e.getMessage() +"\nExecution failed for " + file, line, charpos);
+		}
 	}
 }

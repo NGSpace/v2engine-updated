@@ -1,12 +1,9 @@
 package io.github.ngspace.hudder.v2runtime.values;
 
-import io.github.ngspace.hudder.Hudder;
 import io.github.ngspace.hudder.compilers.abstractions.AV2Compiler;
 import io.github.ngspace.hudder.compilers.utils.CompileException;
 import io.github.ngspace.hudder.v2runtime.V2Runtime;
 import io.github.ngspace.hudder.v2runtime.functions.IV2Function;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 
 public class V2FunctionVar extends AV2Value {
 	IV2Function func;
@@ -27,8 +24,7 @@ public class V2FunctionVar extends AV2Value {
 			this.args[i] = compiler.getV2Value(runtime, nonprocessedargs[i], line, charpos);
 		
 		if (func.isDeprecated(funcname)) {
-			Hudder.showWarningToast(Component.literal(funcname+" function is Deprecated!").withStyle(ChatFormatting.BOLD),
-					Component.literal("\u00A7a" + func.getDeprecationWarning(funcname)));
+			System.out.println(funcname+" is Deprecated!"  + func.getDeprecationWarning(funcname));
 		}
 	}
 

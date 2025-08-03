@@ -8,9 +8,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Set;
 
-import org.mozilla.javascript.ScriptableObject;
-
-import io.github.ngspace.hudder.Hudder;
 import io.github.ngspace.hudder.compilers.abstractions.AV2Compiler;
 import io.github.ngspace.hudder.compilers.utils.CompileException;
 import io.github.ngspace.hudder.utils.HudderUtils;
@@ -59,12 +56,6 @@ public class V2ClassPropertyCall extends AV2Value {
 	@Override public Object get() throws CompileException {
 		Object obj = smartGet();
 		if (obj instanceof Set<?> r) return r.toArray();
-		if (obj instanceof ScriptableObject en) {
-			return new ValueGetter() {
-				@Override public Object get(String n) {return en.get(n);}
-				@Override public String toString() {return en.toString();}
-			};
-		}
 		return obj;
 	}
 
@@ -115,10 +106,10 @@ public class V2ClassPropertyCall extends AV2Value {
 			try {
 				return finalmethod.invoke(objValue, finalParameters);
 			} catch (InvocationTargetException e) {
-				if (Hudder.IS_DEBUG) e.getTargetException().printStackTrace();
+				e.getTargetException().printStackTrace();
 				throw new CompileException(e.getTargetException().getMessage(), line, charpos, e.getTargetException());
 			} catch (IllegalAccessException e) {
-				if (Hudder.IS_DEBUG) e.printStackTrace();
+				e.printStackTrace();
 				throw new CompileException(e.getMessage(), line, charpos, e);
 			}
 		}
@@ -129,10 +120,10 @@ public class V2ClassPropertyCall extends AV2Value {
 			return f.get(objValue);
 		} catch (NoSuchFieldException e) {
 			if (objValue instanceof ValueGetter getter) return getter.get(fieldName);
-			if (Hudder.IS_DEBUG) e.printStackTrace();
+			e.printStackTrace();
 			throw new CompileException("No property named \""+fieldName+'"',line,charpos);
 		} catch (ReflectiveOperationException e) {
-			if (Hudder.IS_DEBUG) e.printStackTrace();
+			e.printStackTrace();
 			throw new CompileException("Failed Reflective Operation property named \""+fieldName+'"',line,charpos);
 		}
 	}

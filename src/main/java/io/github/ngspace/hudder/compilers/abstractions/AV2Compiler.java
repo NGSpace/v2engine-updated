@@ -5,13 +5,10 @@ import java.util.Map;
 
 import io.github.ngspace.hudder.compilers.utils.CompileException;
 import io.github.ngspace.hudder.compilers.utils.CompileState;
-import io.github.ngspace.hudder.compilers.utils.HudInformation;
 import io.github.ngspace.hudder.compilers.utils.functionandconsumerapi.FunctionAndConsumerAPI;
 import io.github.ngspace.hudder.compilers.utils.functionandconsumerapi.FunctionAndConsumerAPI.BindableConsumer;
 import io.github.ngspace.hudder.compilers.utils.functionandconsumerapi.FunctionAndConsumerAPI.BindableFunction;
 import io.github.ngspace.hudder.compilers.utils.functionandconsumerapi.FunctionAndConsumerAPI.Binder;
-import io.github.ngspace.hudder.main.HudCompilationManager;
-import io.github.ngspace.hudder.main.config.HudderConfig;
 import io.github.ngspace.hudder.v2runtime.V2Runtime;
 import io.github.ngspace.hudder.v2runtime.functions.IV2Function;
 import io.github.ngspace.hudder.v2runtime.functions.V2FunctionHandler;
@@ -21,7 +18,7 @@ import io.github.ngspace.hudder.v2runtime.values.AV2Value;
 import io.github.ngspace.hudder.v2runtime.values.DefaultV2VariableParser;
 import io.github.ngspace.hudder.v2runtime.values.IV2VariableParser;
 
-public abstract class AV2Compiler extends AVarTextCompiler implements Binder {
+public abstract class AV2Compiler extends ATextCompiler implements Binder {
 	
 	public Map<String, V2Runtime> runtimes = new HashMap<String, V2Runtime>();
 	public Map<String, Object> tempVariables = new HashMap<String, Object>();
@@ -32,7 +29,6 @@ public abstract class AV2Compiler extends AVarTextCompiler implements Binder {
 	public V2Runtime globalRuntime = null;
 	
 	protected AV2Compiler() {
-		HudCompilationManager.addPreCompilerListener(c -> {globalRuntime=null;tempVariables.clear();});
 		FunctionAndConsumerAPI.getInstance().applyFunctionsAndConsumers(this);
 	}
 	
@@ -89,38 +85,43 @@ public abstract class AV2Compiler extends AVarTextCompiler implements Binder {
 	
 	
 
-	@Override public final HudInformation compile(HudderConfig info, String text, String filename)
-			throws CompileException {
+	@Override public final void compile(String text, String filename) throws CompileException {
 		V2Runtime runtime = runtimes.get(text);
-		if (runtime==null) runtimes.put(text, (runtime=buildRuntime(info, text, new CharPosition(-1, -1), filename, null)));
+		if (runtime==null) runtimes.put(text, (runtime=buildRuntime(text, new CharPosition(-1, -1), filename, null)));
 		if (globalRuntime==null) globalRuntime = runtime;
-		return runtime.execute().toResult();
+		runtime.execute();
+	}
+	public final V2Runtime buildRuntime(String text, String filename) throws CompileException {
+		V2Runtime runtime = runtimes.get(text);
+		if (runtime==null) runtimes.put(text, (runtime=buildRuntime(text, new CharPosition(-1, -1), filename, null)));
+		if (globalRuntime==null) globalRuntime = runtime;
+		return runtime;
 	}
 	
 	
 	
-	public abstract V2Runtime buildRuntime(HudderConfig info, String text, CharPosition charPosition, String filename,
+	public abstract V2Runtime buildRuntime(String text, CharPosition charPosition, String filename,
 			V2Runtime scope) throws CompileException;
 	
 	
 	
 	@Override public void bindConsumer(BindableConsumer cons, String... names) {
-		methodHandler.bindConsumer((c,m,a,t,l,ch,s)->cons.invoke(m, this, s), names);
+		methodHandler.bindConsumer((_,_,_,_,_,s)->cons.invoke(this, s), names);
 	}
 	@Override public void bindFunction(BindableFunction cons, String... names) {
-		functionHandler.bindFunction((c,a,s,l,ch)->cons.invoke(c.compileState, this, s), names);
+		functionHandler.bindFunction((_,_,s,_,_)->cons.invoke(this, s), names);
 	}
 	
 
 
 	public void defineFunctionOrMethod(String commands, String[] args, String name, CharPosition pos, String filename)
 			throws CompileException {
-		V2Runtime runtime = buildRuntime(getConfig(), commands, pos, filename, null);
+		V2Runtime runtime = buildRuntime(commands, pos, filename, null);
 		
 		boolean isMethod = !hasReturnValue(runtime);
 		
 		if (isMethod) {
-			MethodHandler.methods.put(name, (info,state,comp,type,line,charpos,vals) -> {
+			MethodHandler.methods.put(name, (_,_,type,line,charpos,vals) -> {
 				if (vals.length<args.length) throw new CompileException("Not enough arguments", pos.line, pos.charpos);
 				for (int i = 0;i<vals.length;i++) {
 					Object v = vals[i].get();
@@ -128,7 +129,7 @@ public abstract class AV2Compiler extends AVarTextCompiler implements Binder {
 					runtime.putScoped(args[i].trim(), v);
 				}
 				try {
-					state.combineWithResult(runtime.execute().toResult(), false);
+					runtime.execute();
 				} catch (CompileException e) {
 					throw new CompileException("Method "+type+" threw an error: \n"+e.getFailureMessage(),line,charpos);
 				}
@@ -141,7 +142,7 @@ public abstract class AV2Compiler extends AVarTextCompiler implements Binder {
 			}
 			if (temp) throw new CompileException("Main path in function \""+name
 					+"\" does not return a value!",pos.line,pos.charpos);
-			functionHandler.bindFunction((IV2Function) (funcruntime,funcname,vals,line,charpos) -> {
+			functionHandler.bindFunction((IV2Function) (_,_,vals,line,charpos) -> {
 				if (vals.length<args.length) throw new CompileException("Not enough arguments", pos.line, pos.charpos);
 				for (int i = 0;i<vals.length;i++) {
 					Object v = vals[i].get();
@@ -150,7 +151,6 @@ public abstract class AV2Compiler extends AVarTextCompiler implements Binder {
 				}
 				try {
 					CompileState exec = runtime.execute();
-					funcruntime.compileState.combineWithResult(exec.toResult(), false);
 					return exec.returnValue;
 				} catch (CompileException e) {
 					throw new CompileException("Method "+name+" threw an error: \n"+e.getFailureMessage(),line,charpos);

@@ -5,7 +5,6 @@ import io.github.ngspace.hudder.compilers.utils.CompileState;
 
 public class BreakV2RuntimeElement extends AV2RuntimeElement {
 	@Override public boolean execute(CompileState compileState, StringBuilder builder) throws CompileException {
-		compileState.addString(builder.toString(), false);
 		builder.setLength(0);
 		return false;
 	}

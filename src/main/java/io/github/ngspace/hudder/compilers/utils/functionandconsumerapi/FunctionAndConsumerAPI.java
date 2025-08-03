@@ -6,11 +6,7 @@ import java.util.List;
 
 import io.github.ngspace.hudder.compilers.abstractions.ATextCompiler;
 import io.github.ngspace.hudder.compilers.utils.CompileException;
-import io.github.ngspace.hudder.data_management.ComponentsData;
 import io.github.ngspace.hudder.utils.ObjectWrapper;
-import io.github.ngspace.hudder.utils.ValueGetter;
-import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.world.item.ItemStack;
 
 /**
  * This is my attempt at unifying the Hudder and JavaScript compilers.<br>
@@ -60,10 +56,10 @@ public class FunctionAndConsumerAPI {
 	
 
 	@FunctionalInterface public interface BindableFunction {
-		public Object invoke(IUIElementManager man, ATextCompiler comp, ObjectWrapper... args) throws CompileException;
+		public Object invoke(ATextCompiler comp, ObjectWrapper... args) throws CompileException;
 	}
 	@FunctionalInterface public interface BindableConsumer {
-		public void invoke(IUIElementManager man, ATextCompiler comp, ObjectWrapper... args) throws CompileException;
+		public void invoke(ATextCompiler comp, ObjectWrapper... args) throws CompileException;
 	}
 
 	
@@ -76,29 +72,4 @@ public class FunctionAndConsumerAPI {
 	
 	
 	public static FunctionAndConsumerAPI getInstance() {return instance;}
-	
-
-	public static class TranslatedItemStack implements ValueGetter {
-		public String name;
-		public int count;
-		public int maxcount;
-		public int durability;
-		public int maxdurability;
-		private DataComponentMap components;
-		public TranslatedItemStack(ItemStack stack) {
-			name = stack.getDisplayName().getString();
-			count = stack.getCount();
-			maxcount = stack.getMaxStackSize();
-			durability = stack.getMaxDamage()-stack.getDamageValue();
-			maxdurability = stack.getMaxDamage();
-			components = stack.getComponents();
-		}
-		@Override public String toString() {
-			return "{name:\"" + name + "\", count:" + count + ", maxcount: " + maxcount + ", durability: " + durability
-					+ ", maxdurability: " + maxdurability + "}";
-		}
-		@Override public Object get(String component) {
-			return ComponentsData.getObject(component, components);
-		}
-	}
 }

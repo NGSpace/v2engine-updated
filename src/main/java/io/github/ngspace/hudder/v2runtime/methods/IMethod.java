@@ -3,7 +3,6 @@ package io.github.ngspace.hudder.v2runtime.methods;
 import io.github.ngspace.hudder.compilers.abstractions.ATextCompiler;
 import io.github.ngspace.hudder.compilers.utils.CompileException;
 import io.github.ngspace.hudder.compilers.utils.CompileState;
-import io.github.ngspace.hudder.main.config.HudderConfig;
 import io.github.ngspace.hudder.utils.ObjectWrapper;
 
 @FunctionalInterface
@@ -24,6 +23,6 @@ public interface IMethod {
 	 * @param args - the parameters supplied to this method
 	 * @throws CompileException - if the method is not called properly or is unable to execute.
 	 */
-	public void invoke(HudderConfig ci, CompileState meta, ATextCompiler comp, String type, int line, int charpos,
+	public void invoke(CompileState meta, ATextCompiler comp, String type, int line, int charpos,
 			ObjectWrapper... args) throws CompileException;
 }
