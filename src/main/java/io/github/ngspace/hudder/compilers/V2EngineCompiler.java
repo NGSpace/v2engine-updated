@@ -13,7 +13,7 @@ import io.github.ngspace.hudder.v2runtime.runtime_elements.ReturnV2RuntimeElemen
 import io.github.ngspace.hudder.v2runtime.runtime_elements.VariableV2RuntimeElement;
 import io.github.ngspace.hudder.v2runtime.runtime_elements.WhileV2RuntimeElement;
 
-public class HudderV2Compiler extends AV2Compiler {
+public class V2EngineCompiler extends AV2Compiler {
 	public static final int TEXT_STATE = 0;
 	public static final int VARIABLE_STATE = 1;
 	public static final int HASHTAG_STATE = 2;

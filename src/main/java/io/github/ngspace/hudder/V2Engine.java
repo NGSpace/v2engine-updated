@@ -4,13 +4,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
-import io.github.ngspace.hudder.compilers.HudderV2Compiler;
+import io.github.ngspace.hudder.compilers.V2EngineCompiler;
 import io.github.ngspace.hudder.compilers.utils.CompileException;
 
 public class V2Engine {
 	
 	public static void main(String[] args) throws CompileException {
-		new HudderV2Compiler().buildRuntime("", "eval").importFile("/home/computer/Desktop/v2engine.v2", 0, 0);
+		new V2EngineCompiler().buildRuntime("", "eval").importFile("/home/computer/Desktop/v2engine.v2", 0, 0);
 		
 	}
 
