@@ -63,6 +63,7 @@ public class V2Runtime {
 	}
 	public void importFile(String file, int line, int charpos) throws CompileException {
 		try {
+			compiler.checkImportFilter(file, line, charpos);
 			compiler.compile(V2Engine.getFile(file), file);
 		} catch (CompileException e) {
 			throw new CompileException(e.getFailureMessage() +"\nExecution failed for " + file, line, charpos);

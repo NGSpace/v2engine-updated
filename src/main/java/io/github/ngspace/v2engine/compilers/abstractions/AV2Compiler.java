@@ -2,17 +2,17 @@ package io.github.ngspace.v2engine.compilers.abstractions;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
+import io.github.ngspace.v2engine.ImportFilterException;
 import io.github.ngspace.v2engine.compilers.utils.CompileException;
 import io.github.ngspace.v2engine.compilers.utils.CompileState;
 import io.github.ngspace.v2engine.compilers.utils.functionandconsumerapi.FunctionAndConsumerAPI;
-import io.github.ngspace.v2engine.compilers.utils.functionandconsumerapi.FunctionAndConsumerAPI.BindableConsumer;
 import io.github.ngspace.v2engine.compilers.utils.functionandconsumerapi.FunctionAndConsumerAPI.BindableFunction;
 import io.github.ngspace.v2engine.compilers.utils.functionandconsumerapi.FunctionAndConsumerAPI.Binder;
 import io.github.ngspace.v2engine.v2runtime.V2Runtime;
 import io.github.ngspace.v2engine.v2runtime.functions.IV2Function;
 import io.github.ngspace.v2engine.v2runtime.functions.V2FunctionHandler;
-import io.github.ngspace.v2engine.v2runtime.methods.MethodHandler;
 import io.github.ngspace.v2engine.v2runtime.runtime_elements.AV2RuntimeElement;
 import io.github.ngspace.v2engine.v2runtime.values.AV2Value;
 import io.github.ngspace.v2engine.v2runtime.values.DefaultV2VariableParser;
@@ -22,11 +22,11 @@ public abstract class AV2Compiler extends ATextCompiler implements Binder {
 	
 	public Map<String, V2Runtime> runtimes = new HashMap<String, V2Runtime>();
 	public Map<String, Object> tempVariables = new HashMap<String, Object>();
-	public MethodHandler methodHandler = new MethodHandler();
 	public V2FunctionHandler functionHandler = new V2FunctionHandler();
 	protected IV2VariableParser variableParser = new DefaultV2VariableParser();
 	public boolean SYSTEM_VARIABLES_ENABLED = true;
 	public V2Runtime globalRuntime = null;
+	public Predicate<String> importFilter = _ -> false;
 	
 	protected AV2Compiler() {
 		FunctionAndConsumerAPI.getInstance().applyFunctionsAndConsumers(this);
@@ -105,9 +105,6 @@ public abstract class AV2Compiler extends ATextCompiler implements Binder {
 	
 	
 	
-	@Override public void bindConsumer(BindableConsumer cons, String... names) {
-		methodHandler.bindConsumer((_,_,_,_,_,s)->cons.invoke(this, s), names);
-	}
 	@Override public void bindFunction(BindableFunction cons, String... names) {
 		functionHandler.bindFunction((_,_,s,_,_)->cons.invoke(this, s), names);
 	}
@@ -118,46 +115,20 @@ public abstract class AV2Compiler extends ATextCompiler implements Binder {
 			throws CompileException {
 		V2Runtime runtime = buildRuntime(commands, pos, filename, null);
 		
-		boolean isMethod = !hasReturnValue(runtime);
-		
-		if (isMethod) {
-			MethodHandler.methods.put(name, (_,_,type,line,charpos,vals) -> {
-				if (vals.length<args.length) throw new CompileException("Not enough arguments", pos.line, pos.charpos);
-				for (int i = 0;i<vals.length;i++) {
-					Object v = vals[i].get();
-					runtime.putScoped("arg"+(i+1), v);
-					runtime.putScoped(args[i].trim(), v);
-				}
-				try {
-					runtime.execute();
-				} catch (CompileException e) {
-					throw new CompileException("Method "+type+" threw an error: \n"+e.getFailureMessage(),line,charpos);
-				}
-			});
-		} else {//Is function
-			//Make sure the main path actually returns a value
-			boolean temp = true;
-			for (AV2RuntimeElement element : runtime.getElements()) {
-				if (element.returnsAValue()) temp = false;
+		functionHandler.bindFunction((IV2Function) (_,_,vals,line,charpos) -> {
+			if (vals.length<args.length) throw new CompileException("Not enough arguments", pos.line, pos.charpos);
+			for (int i = 0;i<vals.length;i++) {
+				Object v = vals[i].get();
+				runtime.putScoped("arg"+(i+1), v);
+				runtime.putScoped(args[i].trim(), v);
 			}
-			if (temp) throw new CompileException("Main path in function \""+name
-					+"\" does not return a value!",pos.line,pos.charpos);
-			functionHandler.bindFunction((IV2Function) (_,_,vals,line,charpos) -> {
-				if (vals.length<args.length) throw new CompileException("Not enough arguments", pos.line, pos.charpos);
-				for (int i = 0;i<vals.length;i++) {
-					Object v = vals[i].get();
-					runtime.putScoped("arg"+(i+1), v);
-					runtime.putScoped(args[i].trim(), v);
-				}
-				try {
-					CompileState exec = runtime.execute();
-					return exec.returnValue;
-				} catch (CompileException e) {
-					throw new CompileException("Method "+name+" threw an error: \n"+e.getFailureMessage(),line,charpos);
-				}
-			}, name);
-			
-		}
+			try {
+				CompileState exec = runtime.execute();
+				return exec.returnValue;
+			} catch (CompileException e) {
+				throw new CompileException("Method "+name+" threw an error: \n"+e.getFailureMessage(),line,charpos);
+			}
+		}, name);
 	}
 
 	public boolean hasReturnValue(V2Runtime runtime) {
@@ -166,5 +137,23 @@ public abstract class AV2Compiler extends ATextCompiler implements Binder {
 			if (element.getNestedRuntime()!=null&&hasReturnValue(element.getNestedRuntime())) return true;
 		}
 		return false;
+	}
+
+
+	public Predicate<String> getImportFilter() {
+		return importFilter;
+	}
+
+
+	public void setImportFilter(Predicate<String> importFilter) {
+		this.importFilter = importFilter;
+	}
+
+
+	public void checkImportFilter(String file, int line, int charpos) throws ImportFilterException {
+		boolean filterResult = importFilter.test(file);
+		if (!filterResult) {
+			throw new ImportFilterException("File \"" + file + "\" failed to pass the import filter.", line, charpos);
+		}
 	}
 }

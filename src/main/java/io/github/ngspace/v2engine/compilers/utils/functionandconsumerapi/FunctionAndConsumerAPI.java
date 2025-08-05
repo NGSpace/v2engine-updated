@@ -29,28 +29,17 @@ public class FunctionAndConsumerAPI {
 	 * @param binder
 	 */
 	public void applyFunctionsAndConsumers(Binder binder) {
-		for (var cons : consumers.entrySet())
-			binder.bindConsumer(cons.getKey(), cons.getValue());
-		for (var func : functions.entrySet()) {
+		for (var func : functions.entrySet())
 			binder.bindFunction(func.getKey(), func.getValue());
-		}
 		binders.add(binder);
 	}
-	
+
 	
 	
 	public void registerFunction(BindableFunction func, String... names) {
 		for (var binder : binders)
 			binder.bindFunction(func, names);
 		functions.put(func, names);
-	}
-
-
-
-	public void registerConsumer(BindableConsumer func, String... names) {
-		for (var binder : binders) 
-			binder.bindConsumer(func, names);
-		consumers.put(func, names);
 	}
 	
 	
@@ -65,7 +54,6 @@ public class FunctionAndConsumerAPI {
 	
 	
 	public interface Binder {
-		public void bindConsumer(BindableConsumer cons, String... names);
 		public void bindFunction(BindableFunction cons, String... names);
 	}
 	
